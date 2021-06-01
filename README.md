@@ -30,8 +30,8 @@ Dans ce travail de laboratoire, vous allez configurer des routeurs Cisco émulé
 -	Capture Sniffer avec filtres précis sur la communication à épier
 -	Activation du mode « debug » pour certaines fonctions du routeur
 -	Observation des protocoles IPSec
- 
- 
+
+
 ## Matériel
 
 Le logiciel d'émulation à utiliser c'est eve-ng (vous l'avez déjà employé). Vous trouverez ici un [guide très condensé](files/Manuel_EVE-NG.pdf) pour l'utilisation et l'installation de eve-ng.
@@ -106,7 +106,7 @@ Un « protocol » différent de `up` indique la plupart du temps que l’interfa
 
 ---
 
-**Réponse :**  
+**Réponse :**  Aucun problème
 
 ---
 
@@ -145,6 +145,14 @@ Pour votre topologie il est utile de contrôler la connectivité entre :
 
 **Réponse :**  
 
+**R1 vers ISP1 (193.100.100.254) : **ping réussi et c'est normal
+
+**R2 vers ISP2 (193.200.200.254) :** ping réussi et c'est normal
+
+**R2 (193.200.200.1) vers RX1 (193.100.100.1) via Internet** : ping réussi et c'est normal
+
+**R2 (172.17.1.1) et votre poste « VPC »** : ping réussi et c'est normal
+
 ---
 
 - Activation de « debug » et analyse des messages ping.
@@ -167,6 +175,10 @@ Pour déclencher et pratiquer les captures vous allez « pinger » votre routeur
 ---
 
 **Screenshots :**  
+
+![image-20210601140532190](figures/image-20210601140532190.png)
+
+![image-20210601130652539](figures/image-20210601130652539.png)
 
 ---
 
@@ -239,14 +251,41 @@ Vous pouvez consulter l’état de votre configuration IKE avec les commandes su
 
 **Réponse :**  
 
----
+R1
 
+![image-20210601142627869](figures/image-20210601142627869.png)
+
+R2
+
+![image-20210601142546754](figures/image-20210601142546754.png)
+
+On va donc discuter des algorithme mis en place dans ces configurations ci-dessus :
+
+R1 : Utiliser AES est un très bon choix d'algo car il est fort, et est utilisé partout. Cependant, utiliser sha1 est inutile et ne protège rien au niveau des mot de passes ou clé privées hachées. 
+
+R2 : La première proposition avec DES n'est pas une mauvaise proposition, mais il ne sera bientôt plus à jour. sha5 est malheureusement pas très fiable non plus...
+
+Il faudrait à présent utiliser SHA-3 ou SHA 256 ...
+
+---
 
 **Question 5: Utilisez la commande `show crypto isakmp key` et faites part de vos remarques :**
 
 ---
 
 **Réponse :**  
+
+R1 : 
+
+![image-20210601143332281](figures/image-20210601143332281.png)
+
+R2 :
+
+![image-20210601143305490](figures/image-20210601143305490.png)
+
+Utiliser une clé partagée à l'avance est pas très fiable, il est indispensable de créer un nouveau secret partagé lors de chaque nouvelle conversation pour une liste de raison beaucoup trop longue. Ou si le secret partagé devait être sauvegardé, il faudrait utilisé un mot d'au moins 128 byte...
+
+Le mieux serait donc dans ce cas d'initier un nouvel échange de clé DH qui se renouvelle toutes les 2 heures (ou autre).
 
 ---
 
@@ -341,6 +380,10 @@ Pensez à démarrer votre sniffer sur la sortie du routeur R2 vers internet avan
 
 **Réponse :**  
 
+![image-20210601152938522](figures/image-20210601152938522.png)
+
+En mettant le sniffer au milieu, entre les deux routeurs, on visualise sans difficulté les paquets ISAKMP envoyé chaque seconde, on peut donc supposer qu'il s'agit des trames ICMP qui ont été encapsulée. Le routeur R1 aura donc la responsabilité de casser cette encapsulation pour délivrer les paquets à son réseau interne. 
+
 ---
 
 **Question 7: Reportez dans votre rapport une petite explication concernant les différents « timers » utilisés par IKE et IPsec dans cet exercice (recherche Web). :**
@@ -349,6 +392,12 @@ Pensez à démarrer votre sniffer sur la sortie du routeur R2 vers internet avan
 
 **Réponse :**  
 
+Les timers les plus importants sont les `lifetime` utilisé par IKE et IPsec. Il s'agit de deux timers différents, le premier est utilisé dans la phase 1 (authentifie les deux passerelles VPN avec la clé pre-shared, soit `cisco-1` chez nous) et permet donc de mesurer combien de temps cette authentification est valide, dès qu'une connexion a été établie. Par contre, il y a le timer en phases 2 qui va mesurer le temps de vie des SA négocié en phases 2. 
+
+Il y a aussi le timer `keepalive` qui va envoyé des paquets à son pair, et ci-celui-ci ne répond pas, alors la SA IKE est supprimé ainsi que les SA IPsec qu'elle a négociée.
+
+Le dernier est le timer `idle-time`, qui permet qu'au bout d'une non utilisation d'une SA IPsec pendant la durée du timer, alors elle sera supprimée.
+
 ---
 
 
@@ -356,39 +405,39 @@ Pensez à démarrer votre sniffer sur la sortie du routeur R2 vers internet avan
 
 En vous appuyant sur les notions vues en cours et vos observations en laboratoire, essayez de répondre aux questions. À chaque fois, expliquez comment vous avez fait pour déterminer la réponse exacte (capture, config, théorie, ou autre).
 
-
 **Question 8: Déterminez quel(s) type(s) de protocole VPN a (ont) été mis en œuvre (IKE, ESP, AH, ou autre).**
 
 ---
 
-**Réponse :**  
+**Réponse :**  IKE pour négocier les SA, et ESP pour encapsuler les paquets (confidentialité)
 
 ---
-
 
 **Question 9: Expliquez si c’est un mode tunnel ou transport.**
 
 ---
 
-**Réponse :**  
+**Réponse :**  Il s'agit d'un mode tunnel, car nous avons configuré le mode tunnel sur R2. De plus, nous pouvons visualiser sans difficulté que les paquets ont bien été encapsulé, avec les adresse des routeurs en tant que source et destination, et non les hôtes directement.
 
 ---
 
-
-**Question 10: Expliquez quelles sont les parties du paquet qui sont chiffrées. Donnez l’algorithme cryptographique correspondant.**
-
----
-
-**Réponse :**  
+**Question 10: Expliquez quelles sont les parties du paquet qui sont chiffrées. Donnez l’algorithme cryptographique correspondant.**	
 
 ---
 
+**Réponse :**  Comme on est en mode tunnel, `les données + l'en-tête IP de base + ESP trlr` sont chiffrées ! Tout cela a été chiffré avec`esp-aes`. 
+
+![image-20210601161929980](figures/image-20210601161929980.png)
+
+---
 
 **Question 11: Expliquez quelles sont les parties du paquet qui sont authentifiées. Donnez l’algorithme cryptographique correspondant.**
 
 ---
 
-**Réponse :**  
+**Réponse :**  Algorithme utilisé : ESP with the MD5 (HMAC variant) authentication algorithm
+
+![image-20210601161924853](figures/image-20210601161924853.png)
 
 ---
 
@@ -397,6 +446,6 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 
 ---
 
-**Réponse :**  
+**Réponse :**  Dès qu'un information et authentifiée, elle sera intègre car il est impossible d'authentifier sans intégrité. On peut dire que l'intégrité est fixée à la phase 1 de IKE. 
 
 ---
