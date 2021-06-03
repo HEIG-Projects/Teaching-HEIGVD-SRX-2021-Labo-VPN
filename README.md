@@ -267,6 +267,8 @@ R2 : La première proposition avec DES n'est pas une mauvaise proposition, mais 
 
 Il faudrait à présent utiliser SHA-3 ou SHA 256 ...
 
+https://tools.cisco.com/security/center/resources/next_generation_cryptography
+
 ---
 
 **Question 5: Utilisez la commande `show crypto isakmp key` et faites part de vos remarques :**
@@ -425,7 +427,7 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 
 ---
 
-**Réponse :**  Comme on est en mode tunnel, `les données + l'en-tête IP de base + ESP trlr` sont chiffrées ! Tout cela a été chiffré avec`esp-aes`. 
+**Réponse :**  Comme on est en mode tunnel, `les données + l'en-tête IP de base + ESP trlr` sont chiffrées ! Tout cela a été chiffré avec`esp-aes 192`. 
 
 ![image-20210601161929980](figures/image-20210601161929980.png)
 
@@ -435,17 +437,21 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 
 ---
 
-**Réponse :**  Algorithme utilisé : ESP with the MD5 (HMAC variant) authentication algorithm
+**Réponse :**  Algorithme utilisé : ESP with the SHA1(HMAC variant) authentication algorithm
 
 ![image-20210601161924853](figures/image-20210601161924853.png)
 
----
+La partie authentifié est tout ce qui est encapsulé dans la nouvelle entête IP. 
 
+---
 
 **Question 12: Expliquez quelles sont les parties du paquet qui sont protégées en intégrité. Donnez l’algorithme cryptographique correspondant.**
 
 ---
 
-**Réponse :**  Dès qu'un information et authentifiée, elle sera intègre car il est impossible d'authentifier sans intégrité. On peut dire que l'intégrité est fixée à la phase 1 de IKE. 
+**Réponse :**  Dès qu'un information et authentifiée, elle sera intègre car il est impossible d'authentifier sans intégrité. 
+
+`SHA-1` est utilisé pour la signature. Tout est protégé en intégrité, sauf la nouvelle entête IP.
 
 ---
+
